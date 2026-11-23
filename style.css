@@ -1,0 +1,318 @@
+/* The gear bar, tucked off its edge until hovered.
+   Size, opacity, and colors come from the options page through CSS variables. */
+#scroll-gear {
+  --sg-opacity: 0.6;
+  --sg-opacity-open: 0.95;
+  --sg-width: 48px;
+  --sg-accent: #7cf5ff;
+  --sg-length-vw: 100vw;
+  --sg-length-vh: 100vh;
+
+  position: fixed;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  opacity: var(--sg-opacity);
+  background: rgba(10, 14, 20, 0);
+  transition: transform 0.3s ease, background 0.3s ease, opacity 0.3s ease;
+  z-index: 2147483647;
+}
+
+/* ----- Vertical bars (right / left edge) ----- */
+#scroll-gear.pos-right {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: auto;
+  width: var(--sg-width);
+  height: auto;
+  flex-direction: column;
+  padding: 16px 0;
+  transform: translateX(calc(100% - 12px));
+}
+
+#scroll-gear.pos-left {
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: auto;
+  width: var(--sg-width);
+  height: auto;
+  flex-direction: column;
+  padding: 16px 0;
+  transform: translateX(calc(-100% + 12px));
+}
+
+/* ----- Horizontal bars (top / bottom edge, full width) ----- */
+#scroll-gear.pos-bottom {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: auto;
+  width: auto;
+  height: var(--sg-width);
+  flex-direction: row;
+  padding: 0 16px;
+  transform: translateY(calc(100% - 12px));
+}
+
+#scroll-gear.pos-top {
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: auto;
+  width: auto;
+  height: var(--sg-width);
+  flex-direction: row;
+  padding: 0 16px;
+  transform: translateY(calc(-100% + 12px));
+}
+
+/* Open state: slide fully into view (listed after position rules so it wins) */
+#scroll-gear.open {
+  transform: none;
+  opacity: var(--sg-opacity-open);
+  background: rgba(10, 14, 20, 0.35);
+}
+
+/* Grip strip visible while tucked away */
+#scroll-gear::before {
+  content: "";
+  position: absolute;
+  border-radius: 2px;
+  background: var(--sg-accent);
+  transition: opacity 0.2s;
+}
+
+#scroll-gear.pos-right::before {
+  left: 4px;
+  right: auto;
+  top: 50%;
+  bottom: auto;
+  width: 4px;
+  height: 64px;
+  margin-top: -32px;
+  margin-left: 0;
+}
+
+#scroll-gear.pos-left::before {
+  left: auto;
+  right: 4px;
+  top: 50%;
+  bottom: auto;
+  width: 4px;
+  height: 64px;
+  margin-top: -32px;
+  margin-left: 0;
+}
+
+#scroll-gear.pos-bottom::before {
+  left: 50%;
+  right: auto;
+  top: 4px;
+  bottom: auto;
+  width: 64px;
+  height: 4px;
+  margin-left: -32px;
+  margin-top: 0;
+}
+
+#scroll-gear.pos-top::before {
+  left: 50%;
+  right: auto;
+  top: auto;
+  bottom: 4px;
+  width: 64px;
+  height: 4px;
+  margin-left: -32px;
+  margin-top: 0;
+}
+
+#scroll-gear.open::before {
+  opacity: 0;
+}
+
+/* Arrows scale with the chosen size */
+.gear-arrow {
+  width: min(calc(var(--sg-width) * 0.75), 72px);
+  height: min(calc(var(--sg-width) * 0.75), 72px);
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(40, 46, 56, 0.5);
+  color: #fff;
+  font-size: min(calc(var(--sg-width) * 0.37), 26px);
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  user-select: none;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.gear-arrow:hover,
+.gear-arrow:active {
+  background: rgba(20, 24, 32, 0.8);
+  color: var(--sg-accent);
+}
+
+#scroll-gear.glow .gear-arrow:hover,
+#scroll-gear.glow .gear-arrow:active {
+  box-shadow: 0 0 12px var(--sg-accent);
+}
+
+/* The track: vertical by default */
+.gear-track {
+  position: relative;
+  flex: 1;
+  width: max(20px, calc(var(--sg-width) * 0.4));
+  margin: 10px 0;
+  border-radius: 10px;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.15) 0 1px,
+      transparent 1px 22px
+    ),
+    rgba(255, 255, 255, 0.08);
+  cursor: ns-resize;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The track: horizontal bars run full width with ticks along the length */
+#scroll-gear.pos-bottom .gear-track,
+#scroll-gear.pos-top .gear-track {
+  width: auto;
+  height: max(20px, calc(var(--sg-width) * 0.4));
+  margin: 0 10px;
+  cursor: ew-resize;
+  background:
+    repeating-linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0.15) 0 1px,
+      transparent 1px 22px
+    ),
+    rgba(255, 255, 255, 0.08);
+}
+
+#scroll-gear.glow .gear-track {
+  box-shadow: inset 0 0 8px rgba(255, 255, 255, 0.08);
+}
+
+/* Neutral line in the middle */
+.gear-neutral {
+  position: absolute;
+  left: -4px;
+  right: -4px;
+  top: 50%;
+  height: 2px;
+  margin-top: -1px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.75);
+  pointer-events: none;
+}
+
+#scroll-gear.pos-bottom .gear-neutral,
+#scroll-gear.pos-top .gear-neutral {
+  left: 50%;
+  right: auto;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  height: auto;
+  margin-top: 0;
+  margin-left: -1px;
+}
+
+#scroll-gear.glow .gear-neutral {
+  background: var(--sg-accent);
+  box-shadow: 0 0 8px var(--sg-accent);
+}
+
+/* Knob follows the pointer while hovering or dragging */
+.gear-knob {
+  position: absolute;
+  left: 50%;
+  width: 30px;
+  height: 14px;
+  margin-left: -15px;
+  margin-top: -7px;
+  border-radius: 7px;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+
+#scroll-gear.pos-bottom .gear-knob,
+#scroll-gear.pos-top .gear-knob {
+  top: 50%;
+  width: 14px;
+  height: 30px;
+  margin-left: -7px;
+  margin-top: -15px;
+}
+
+#scroll-gear.glow .gear-knob {
+  background: var(--sg-accent);
+  box-shadow: 0 0 14px var(--sg-accent), 0 0 4px var(--sg-accent);
+}
+
+.gear-track.active .gear-knob {
+  opacity: 0.95;
+}
+
+/* Partial length: a bar centered on its edge, shorter than the full screen */
+#scroll-gear.partial.pos-bottom,
+#scroll-gear.partial.pos-top {
+  left: 50%;
+  right: auto;
+  width: var(--sg-length-vw);
+  margin-left: calc(var(--sg-length-vw) / -2);
+}
+
+#scroll-gear.partial.pos-right,
+#scroll-gear.partial.pos-left {
+  top: 50%;
+  bottom: auto;
+  height: var(--sg-length-vh);
+  margin-top: calc(var(--sg-length-vh) / -2);
+}
+
+/* Electric effect: flickering sparks on the bar, knob, and grip */
+@keyframes sg-spark {
+  0%   { opacity: 1;    box-shadow: 0 0 6px var(--sg-accent), 0 0 14px var(--sg-accent); }
+  18%  { opacity: 0.45; box-shadow: 0 0 2px var(--sg-accent); }
+  24%  { opacity: 1;    box-shadow: 0 0 10px var(--sg-accent), 0 0 24px var(--sg-accent); }
+  40%  { opacity: 0.7;  box-shadow: 0 0 4px var(--sg-accent); }
+  55%  { opacity: 1;    box-shadow: 0 0 8px var(--sg-accent), 0 0 18px var(--sg-accent); }
+  100% { opacity: 0.85; box-shadow: 0 0 5px var(--sg-accent), 0 0 12px var(--sg-accent); }
+}
+
+@keyframes sg-grip {
+  0%, 100% { opacity: 1; }
+  20%      { opacity: 0.3; }
+  30%      { opacity: 1; }
+  60%      { opacity: 0.5; }
+}
+
+#scroll-gear.electric .gear-neutral {
+  background: var(--sg-accent);
+  animation: sg-spark 0.9s infinite alternate;
+}
+
+#scroll-gear.electric .gear-track.active .gear-knob {
+  background: var(--sg-accent);
+  animation: sg-spark 0.6s infinite alternate;
+}
+
+#scroll-gear.electric::before {
+  box-shadow: 0 0 8px var(--sg-accent);
+  animation: sg-grip 1.4s infinite;
+}
+
+#scroll-gear.electric.open .gear-track {
+  box-shadow: inset 0 0 12px var(--sg-accent);
+}

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Scroll Arrows Settings</title>
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 48px 16px;
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #1b2633, #0b0f14 70%);
+      color: #e6edf3;
+    }
+    .card {
+      width: 100%;
+      max-width: 480px;
+      padding: 28px;
+      border-radius: 18px;
+      background: rgba(20, 26, 34, 0.85);
+      border: 1px solid rgba(124, 245, 255, 0.15);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    }
+    h1 { margin: 0 0 4px; font-size: 22px; }
+    p.sub { margin: 0 0 24px; color: #8b98a8; font-size: 14px; }
+    .row { margin-bottom: 20px; }
+    label { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; }
+    .value { color: #7cf5ff; font-variant-numeric: tabular-nums; }
+    input[type="range"] { width: 100%; accent-color: #7cf5ff; }
+    select, input[type="color"] {
+      width: 100%;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid #2b3642;
+      background: #0f141a;
+      color: #e6edf3;
+      padding: 0 8px;
+      box-sizing: border-box;
+    }
+    input[type="color"] { padding: 4px; cursor: pointer; }
+    .toggle { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+    .toggle input { width: 18px; height: 18px; accent-color: #7cf5ff; }
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 28px;
+      font-size: 13px;
+      color: #8b98a8;
+    }
+    button {
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: 1px solid #2b3642;
+      background: #0f141a;
+      color: #e6edf3;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover { border-color: #7cf5ff; color: #7cf5ff; }
+    #status { opacity: 0; transition: opacity 0.4s; }
+    #status.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Scroll Arrows</h1>
+    <p class="sub">Changes apply instantly on open pages.</p>
+
+    <div class="row">
+      <label for="opacity">Opacity <span class="value" id="opacityVal"></span></label>
+      <input type="range" id="opacity" min="0.05" max="1" step="0.05">
+    </div>
+
+    <div class="row">
+      <label for="size">Thickness <span class="value" id="sizeVal"></span></label>
+      <input type="range" id="size" min="24" max="240" step="2">
+    </div>
+
+    <div class="row">
+      <label for="length"><span id="lengthName">Width</span> <span class="value" id="lengthVal"></span></label>
+      <input type="range" id="length" min="20" max="100" step="5">
+    </div>
+
+    <div class="row">
+      <label for="speed">Scroll speed <span class="value" id="speedVal"></span></label>
+      <input type="range" id="speed" min="5" max="60" step="1">
+    </div>
+
+    <div class="row">
+      <label for="side">Position and shape</label>
+      <select id="side">
+        <option value="right">Right edge (vertical)</option>
+        <option value="left">Left edge (vertical)</option>
+        <option value="bottom">Bottom edge (wide, left to right)</option>
+        <option value="top">Top edge (wide, left to right)</option>
+      </select>
+    </div>
+
+    <div class="row">
+      <label for="interaction">How it scrolls</label>
+      <select id="interaction">
+        <option value="hover">Hover to scroll</option>
+        <option value="click">Click to navigate</option>
+        <option value="drag">Click and drag to scroll</option>
+      </select>
+    </div>
+
+    <div class="row">
+      <label for="mode">Visibility</label>
+      <select id="mode">
+        <option value="hover">Hide until hovered</option>
+        <option value="fixed">Always visible (fixed)</option>
+      </select>
+    </div>
+
+    <div class="row">
+      <label for="accent">Accent color</label>
+      <input type="color" id="accent">
+    </div>
+
+    <div class="row">
+      <label class="toggle">
+        <input type="checkbox" id="glow">
+        Glow effects
+      </label>
+    </div>
+
+    <div class="row">
+      <label class="toggle">
+        <input type="checkbox" id="electric">
+        Electric flicker
+      </label>
+    </div>
+
+    <div class="footer">
+      <span id="status">Saved</span>
+      <button id="reset">Reset to defaults</button>
+    </div>
+  </div>
+  <script src="options.js"></script>
+</body>
+</html>
