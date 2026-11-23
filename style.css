@@ -316,3 +316,8 @@
 #scroll-gear.electric.open .gear-track {
   box-shadow: inset 0 0 12px var(--sg-accent);
 }
+
+/* Hidden while the page is full screen */
+#scroll-gear.in-fullscreen {
+  display: none !important;
+}

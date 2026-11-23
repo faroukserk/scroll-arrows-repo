@@ -12,7 +12,7 @@
     interaction: "hover",  // hover | click | drag
     accent: "#7cf5ff",
     glow: true,
-    electric: false       // flickering electric effect
+    electric: false        // flickering electric effect
   };
   const DEAD_ZONE = 0.08; // fraction of half the track treated as neutral
   let settings = { ...DEFAULTS };
@@ -25,33 +25,69 @@
 
   const isHorizontal = () => settings.side === "top" || settings.side === "bottom";
 
-  const scrollAxis = (amount) => {
-    if (isHorizontal()) window.scrollBy(amount, 0);
-    else window.scrollBy(0, amount);
+  // ---------- Finding the element that actually scrolls ----------
+  // Many sites (Discord, Slack, Gmail, etc.) scroll an inner panel,
+  // not the window, so we find the scrollable element under the screen center.
+  const canScroll = (node, horiz) => {
+    if (!(node instanceof Element)) return false;
+    const cs = getComputedStyle(node);
+    const ov = horiz ? cs.overflowX : cs.overflowY;
+    if (!/(auto|scroll|overlay)/.test(ov)) return false;
+    return horiz
+      ? node.scrollWidth > node.clientWidth + 1
+      : node.scrollHeight > node.clientHeight + 1;
   };
 
-  const currentPos = (horiz) => (horiz ? window.scrollX : window.scrollY);
+  const findScroller = (horiz) => {
+    const stack = document.elementsFromPoint(window.innerWidth / 2, window.innerHeight / 2);
+    for (const node of stack) {
+      if (node.id === "scroll-gear") continue;
+      if (canScroll(node, horiz)) return node;
+    }
+    return document.scrollingElement || document.documentElement;
+  };
 
-  const maxPos = (horiz) =>
-    horiz
-      ? document.documentElement.scrollWidth - window.innerWidth
-      : document.documentElement.scrollHeight - window.innerHeight;
+  // Cache the target briefly so we don't search on every animation frame
+  let cachedTarget = null;
+  let cachedAt = 0;
+  let cachedHoriz = null;
+  const getScroller = (horiz) => {
+    const now = performance.now();
+    if (
+      !cachedTarget ||
+      !cachedTarget.isConnected ||
+      cachedHoriz !== horiz ||
+      now - cachedAt > 300
+    ) {
+      cachedTarget = findScroller(horiz);
+      cachedAt = now;
+      cachedHoriz = horiz;
+    }
+    return cachedTarget;
+  };
+
+  const getPos = (s, horiz) => (horiz ? s.scrollLeft : s.scrollTop);
+  const setPos = (s, horiz, v) => {
+    if (horiz) s.scrollLeft = v;
+    else s.scrollTop = v;
+  };
+  const addPos = (s, horiz, amount) => setPos(s, horiz, getPos(s, horiz) + amount);
+  const getMax = (s, horiz) =>
+    horiz ? s.scrollWidth - s.clientWidth : s.scrollHeight - s.clientHeight;
+  const getSize = (s, horiz) => (horiz ? s.clientWidth : s.clientHeight);
 
   // ---------- Smooth glide to a target position ----------
   let glideId = null;
   const glideTo = (target, horiz, duration = 500) => {
     cancelAnimationFrame(glideId);
-    const startX = window.scrollX;
-    const startY = window.scrollY;
-    const start = horiz ? startX : startY;
+    const s = getScroller(horiz);
+    const start = getPos(s, horiz);
     const distance = target - start;
     const t0 = performance.now();
     const ease = (t) => 1 - Math.pow(1 - t, 3);
     const frame = (now) => {
       const t = Math.min((now - t0) / duration, 1);
-      const pos = start + distance * ease(t);
-      if (horiz) window.scrollTo(pos, startY);
-      else window.scrollTo(startX, pos);
+      setPos(s, horiz, start + distance * ease(t));
       if (t < 1) glideId = requestAnimationFrame(frame);
     };
     glideId = requestAnimationFrame(frame);
@@ -75,12 +111,12 @@
       e.stopPropagation();
       stop();
       const horiz = isHorizontal();
-      const size = horiz ? window.innerWidth : window.innerHeight;
-      glideTo(currentPos(horiz) + direction * size * 0.4, horiz);
+      const s = getScroller(horiz);
+      glideTo(getPos(s, horiz) + direction * getSize(s, horiz) * 0.4, horiz);
       holdTimer = setTimeout(() => {
         cancelAnimationFrame(glideId);
         const step = () => {
-          scrollAxis(direction * 10);
+          addPos(getScroller(horiz), horiz, direction * 10);
           holdId = requestAnimationFrame(step);
         };
         step();
@@ -121,11 +157,11 @@
     gear.style.setProperty("--sg-width", settings.size + "px");
     gear.style.setProperty("--sg-length-vw", settings.length + "vw");
     gear.style.setProperty("--sg-length-vh", settings.length + "vh");
-    gear.classList.toggle("partial", Number(settings.length) < 100);
     gear.style.setProperty("--sg-accent", settings.accent);
 
     POSITIONS.forEach((p) => gear.classList.remove(p));
     gear.classList.add("pos-" + settings.side);
+    gear.classList.toggle("partial", Number(settings.length) < 100);
     gear.classList.toggle("glow", !!settings.glow);
     gear.classList.toggle("electric", !!settings.electric);
     gear.classList.toggle("fixed", settings.mode === "fixed");
@@ -157,6 +193,20 @@
     for (const key in changes) updated[key] = changes[key].newValue;
     applySettings(updated);
   });
+
+  // ---------- Hide during full screen (videos, games, presentations) ----------
+  const updateFullscreenState = () => {
+    const fs = document.fullscreenElement || document.webkitFullscreenElement;
+    // Browser full screen (F11) also fills the whole screen, so treat it the same way
+    const browserFull =
+      Math.abs(window.screen.height - window.innerHeight) < 2 &&
+      Math.abs(window.screen.width - window.innerWidth) < 2;
+    gear.classList.toggle("in-fullscreen", !!fs || browserFull);
+  };
+  document.addEventListener("fullscreenchange", updateFullscreenState);
+  document.addEventListener("webkitfullscreenchange", updateFullscreenState);
+  window.addEventListener("resize", updateFullscreenState);
+  updateFullscreenState();
 
   // ---------- Gear logic ----------
   let speedFactor = 0; // -1 (full up/left) .. 1 (full down/right)
@@ -193,12 +243,13 @@
       mag < DEAD_ZONE ? 0 : (Math.sign(off) * (mag - DEAD_ZONE)) / (1 - DEAD_ZONE);
   };
 
-  // Click-to-navigate: jump to the part of the page the track position points to
+  // Click-to-navigate: jump to the part of the content the track position points to
   const navigateTo = (e) => {
     const horiz = isHorizontal();
     const { rel, len } = placeKnob(e);
     const fraction = len > 0 ? rel / len : 0;
-    glideTo(fraction * maxPos(horiz), horiz, 600);
+    const s = getScroller(horiz);
+    glideTo(fraction * getMax(s, horiz), horiz, 600);
   };
 
   const openGear = () => gear.classList.add("open");
@@ -219,12 +270,12 @@
     dragging = true;
     track.setPointerCapture(e.pointerId);
     track.classList.add("active");
+    getScroller(isHorizontal()); // pick the scrolling element for this gesture
 
     if (settings.interaction === "click") {
       speedFactor = 0;
       navigateTo(e);
     } else {
-      // Hover and drag modes both allow speed while the button is pressed
       updateFromPointer(e, true);
     }
   });
@@ -233,8 +284,6 @@
     if (dragging || e.pointerType === "mouse") {
       track.classList.add("active");
       const mode = settings.interaction;
-      // Hover mode: speed follows the pointer. Drag mode: only while pressed.
-      // Click mode: knob follows the pointer, but no scrolling.
       const allowSpeed = mode === "hover" || (mode === "drag" && dragging);
       updateFromPointer(e, allowSpeed);
     }
@@ -250,7 +299,6 @@
   const endDrag = (e) => {
     dragging = false;
     track.classList.remove("active");
-    // Hover mode keeps scrolling with a mouse that stays on the track
     if (!(settings.interaction === "hover" && e.pointerType === "mouse")) {
       speedFactor = 0;
     }
@@ -262,7 +310,10 @@
   track.addEventListener("pointercancel", endDrag);
 
   const loop = () => {
-    if (speedFactor !== 0) scrollAxis(speedFactor * settings.speed);
+    if (speedFactor !== 0) {
+      const horiz = isHorizontal();
+      addPos(getScroller(horiz), horiz, speedFactor * settings.speed);
+    }
     requestAnimationFrame(loop);
   };
   loop();
